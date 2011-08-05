@@ -148,18 +148,15 @@
     //
     // If remove is true, the whitespace disappears.
     Chunks.prototype.trimWhitespace = function (remove) {
-
-        this.selection = this.selection.replace(/^(\s*)/, "");
-
-        if (!remove) {
-            this.before += re.$1;
+        var beforeReplacer, afterReplacer, that = this;
+        if (remove) {
+            beforeReplacer = afterReplacer = "";
+        } else {
+            beforeReplacer = function (s) { that.before += s; return ""; }
+            afterReplacer = function (s) { that.after = s + that.after; return ""; }
         }
-
-        this.selection = this.selection.replace(/(\s*)$/, "");
-
-        if (!remove) {
-            this.after = re.$1 + this.after;
-        }
+        
+        this.selection = this.selection.replace(/^(\s*)/, beforeReplacer).replace(/(\s*)$/, afterReplacer);
     };
 
 
@@ -1520,11 +1517,9 @@
         chunk.selection = chunk.selection.replace(/\n{2,}/g, "\n");
 
         // Look for stars before and after.  Is the chunk already marked up?
-        chunk.before.search(/(\**$)/);
-        var starsBefore = re.$1;
-
-        chunk.after.search(/(^\**)/);
-        var starsAfter = re.$1;
+        // note that these regex matches cannot fail
+        var starsBefore = /(\**$)/.exec(chunk.before)[0];
+        var starsAfter = /(^\**)/.exec(chunk.after)[0];
 
         var prevStars = Math.min(starsBefore.length, starsAfter.length);
 
@@ -1792,7 +1787,7 @@
         if (chunk.before) {
             var lines = chunk.before.replace(/\n$/, "").split("\n");
             var inChain = false;
-            for (var i = 0; i < lines.length; i++ ) {
+            for (var i = 0; i < lines.length; i++) {
                 var good = false;
                 line = lines[i];
                 inChain = inChain && line.length > 0; // c) any non-empty line continues the chain
