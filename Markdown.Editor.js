@@ -227,7 +227,7 @@
 
     // A collection of the important regions on the page.
     // Cached so we don't have to keep traversing the DOM.
-    // Also holds ieRetardedClick and ieCachedRange, where necessary; working around
+    // Also holds ieCachedRange and ieCachedScrollTop, where necessary; working around
     // this issue:
     // Internet explorer has problems with CSS sprite buttons that use HTML
     // lists.  When you click on the background image "button", IE will 
@@ -678,7 +678,7 @@
 
         this.setInputAreaSelectionStartEnd = function () {
 
-            if (!panels.ieRetardedClick && (inputArea.selectionStart || inputArea.selectionStart === 0)) {
+            if (!panels.ieCachedRange && (inputArea.selectionStart || inputArea.selectionStart === 0)) {
 
                 stateObj.start = inputArea.selectionStart;
                 stateObj.end = inputArea.selectionEnd;
@@ -688,16 +688,9 @@
                 stateObj.text = util.fixEolChars(inputArea.value);
 
                 // IE loses the selection in the textarea when buttons are
-                // clicked.  On IE we cache the selection and set a flag
-                // which we check for here.
-                var range;
-                if (panels.ieRetardedClick && panels.ieCachedRange) {
-                    range = panels.ieCachedRange;
-                    panels.ieRetardedClick = false;
-                }
-                else {
-                    range = doc.selection.createRange();
-                }
+                // clicked.  On IE we cache the selection. Here, if something is cached,
+                // we take it.
+                var range = panels.ieCachedRange || doc.selection.createRange();
 
                 var fixedRange = util.fixEolChars(range.text);
                 var marker = "\x07";
@@ -721,6 +714,11 @@
                     }
                     range.text = fixedRange;
                 }
+
+                if (panels.ieCachedRange)
+                    stateObj.scrollTop = panels.ieCachedScrollTop; // this is set alongside with ieCachedRange
+                
+                panels.ieCachedRange = null;
 
                 this.setInputAreaSelection();
             }
@@ -1344,8 +1342,8 @@
                         if (doc.activeElement && doc.activeElement !== panels.input) { // we're not even in the input box, so there's no selection
                             return;
                         }
-                        panels.ieRetardedClick = true;
                         panels.ieCachedRange = document.selection.createRange();
+                        panels.ieCachedScrollTop = panels.input.scrollTop;
                     };
                 }
 
