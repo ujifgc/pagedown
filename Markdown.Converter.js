@@ -1113,6 +1113,8 @@ else
 
             var grafs = text.split(/\n{2,}/g);
             var grafsOut = [];
+            
+            var markerRe = /~K(\d+)K/g;
 
             //
             // Wrap <p> tags.
@@ -1122,10 +1124,10 @@ else
                 var str = grafs[i];
 
                 // if this is an HTML marker, copy it
-                if (str.search(/~K(\d+)K/g) >= 0) {
+                if (markerRe.test(str)) {
                     grafsOut.push(str);
                 }
-                else if (str.search(/\S/) >= 0) {
+                else if (/\S/.test(str)) {
                     str = _RunSpanGamut(str);
                     str = str.replace(/^([ \t]*)/g, "<p>");
                     str += "</p>"
@@ -1139,11 +1141,13 @@ else
             if (!doNotUnhash) {
                 end = grafsOut.length;
                 for (var i = 0; i < end; i++) {
-                    // if this is a marker for an html block...
-                    while (grafsOut[i].search(/~K(\d+)K/) >= 0) {
-                        var blockText = g_html_blocks[RegExp.$1];
-                        blockText = blockText.replace(/\$/g, "$$$$"); // Escape any dollar signs
-                        grafsOut[i] = grafsOut[i].replace(/~K\d+K/, blockText);
+                    var foundAny = true;
+                    while (foundAny) { // we may need several runs, since the data may be nested
+                        foundAny = false;
+                        grafsOut[i] = grafsOut[i].replace(markerRe, function (wholeMatch, id) {
+                            foundAny = true;
+                            return g_html_blocks[id];
+                        });
                     }
                 }
             }
