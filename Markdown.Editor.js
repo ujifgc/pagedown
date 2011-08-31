@@ -5,9 +5,9 @@
     var util = {},
         position = {},
         ui = {},
-        doc = top.document,
-        re = top.RegExp,
-        nav = top.navigator,
+        doc = window.document,
+        re = window.RegExp,
+        nav = window.navigator,
         SETTINGS = { lineLength: 72 },
 
     // Used to work around some browser bugs where we can't use feature testing.
@@ -410,7 +410,7 @@
             }
 
             if (!uaSniffed.isIE || mode != "moving") {
-                timer = top.setTimeout(refreshState, 1);
+                timer = setTimeout(refreshState, 1);
             }
             else {
                 inputStateObj = null;
@@ -425,7 +425,7 @@
         this.setCommandMode = function () {
             mode = "command";
             saveState();
-            timer = top.setTimeout(refreshState, 0);
+            timer = setTimeout(refreshState, 0);
         };
 
         this.canUndo = function () {
@@ -539,8 +539,8 @@
                 if (event.preventDefault) {
                     event.preventDefault();
                 }
-                if (top.event) {
-                    top.event.returnValue = false;
+                if (window.event) {
+                    window.event.returnValue = false;
                 }
                 return;
             }
@@ -786,8 +786,8 @@
 
             var result = 0;
 
-            if (top.innerHeight) {
-                result = top.pageYOffset;
+            if (window.innerHeight) {
+                result = window.pageYOffset;
             }
             else
                 if (doc.documentElement && doc.documentElement.scrollTop) {
@@ -833,7 +833,7 @@
         var applyTimeout = function () {
 
             if (timeout) {
-                top.clearTimeout(timeout);
+                clearTimeout(timeout);
                 timeout = undefined;
             }
 
@@ -848,7 +848,7 @@
                 if (delay > maxDelay) {
                     delay = maxDelay;
                 }
-                timeout = top.setTimeout(makePreviewHtml, delay);
+                timeout = setTimeout(makePreviewHtml, delay);
             }
         };
 
@@ -935,12 +935,12 @@
             var fullTop = position.getTop(panels.input) - getDocScrollTop();
 
             if (uaSniffed.isIE) {
-                top.setTimeout(function () {
-                    top.scrollBy(0, fullTop - emptyTop);
+                setTimeout(function () {
+                    window.scrollBy(0, fullTop - emptyTop);
                 }, 0);
             }
             else {
-                top.scrollBy(0, fullTop - emptyTop);
+                window.scrollBy(0, fullTop - emptyTop);
             }
         };
 
@@ -1135,7 +1135,7 @@
 
         // Why is this in a zero-length timeout?
         // Is it working around a browser bug?
-        top.setTimeout(function () {
+        setTimeout(function () {
 
             createDialog();
 
@@ -1227,8 +1227,8 @@
                     key.preventDefault();
                 }
 
-                if (top.event) {
-                    top.event.returnValue = false;
+                if (window.event) {
+                    window.event.returnValue = false;
                 }
             }
         });
