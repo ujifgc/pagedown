@@ -1114,7 +1114,7 @@ else
             var grafs = text.split(/\n{2,}/g);
             var grafsOut = [];
             
-            var markerRe = /~K(\d+)K/g;
+            var markerRe = /~K(\d+)K/;
 
             //
             // Wrap <p> tags.
@@ -1144,7 +1144,7 @@ else
                     var foundAny = true;
                     while (foundAny) { // we may need several runs, since the data may be nested
                         foundAny = false;
-                        grafsOut[i] = grafsOut[i].replace(markerRe, function (wholeMatch, id) {
+                        grafsOut[i] = grafsOut[i].replace(/~K(\d+)K/g, function (wholeMatch, id) {
                             foundAny = true;
                             return g_html_blocks[id];
                         });
