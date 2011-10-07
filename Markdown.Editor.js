@@ -1650,7 +1650,7 @@
         chunk.findTags(/\s*!?\[/, /\][ ]?(?:\n[ ]*)?(\[.*?\])?/);
         var background;
 
-        if (chunk.endTag.length > 1) {
+        if (chunk.endTag.length > 1 && chunk.startTag.length > 0) {
 
             chunk.startTag = chunk.startTag.replace(/!?\[/, "");
             chunk.endTag = "";
@@ -1658,6 +1658,12 @@
 
         }
         else {
+            
+            // We're moving start and end tag back into the selection, since (as we're in the else block) we're not
+            // *removing* a link, but *adding* one, so whatever findTags() found is now back to being part of the
+            // link text. linkEnteredCallback takes care of escaping any brackets.
+            chunk.selection = chunk.startTag + chunk.selection + chunk.endTag;
+            chunk.startTag = chunk.endTag = "";
 
             if (/\n\n/.test(chunk.selection)) {
                 this.addLinkDef(chunk, null);
@@ -1671,8 +1677,18 @@
                 background.parentNode.removeChild(background);
 
                 if (link !== null) {
-
-                    chunk.startTag = chunk.endTag = "";
+                    // (                          $1
+                    //     (?:^|[^\\])            beginning of the string or anything that's not a backslash
+                    //     (?:\\\\)*              an even number (this includes zero) of backslashes
+                    // )
+                    // (                          $2
+                    //     [[\]]                  an opening or closing bracket
+                    // )
+                    //
+                    // In other words, a non-escaped bracket. These have to be escaped now to make sure they
+                    // don't count as the end of the link or similar.
+                    chunk.selection = chunk.selection.replace(/((?:^|[^\\])(?:\\\\)*)([[\]])/g, "$1\\$2")
+                    
                     var linkDef = " [999]: " + properlyEncoded(link);
 
                     var num = that.addLinkDef(chunk, linkDef);
