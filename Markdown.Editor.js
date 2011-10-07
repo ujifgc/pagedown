@@ -1485,10 +1485,11 @@
 
     commandProto.wrap = function (chunk, len) {
         this.unwrap(chunk);
-        var regex = new re("(.{1," + len + "})( +|$\\n?)", "gm");
+        var regex = new re("(.{1," + len + "})( +|$\\n?)", "gm"),
+            that = this;
 
         chunk.selection = chunk.selection.replace(regex, function (line, marked) {
-            if (new re("^" + this.prefixes, "").test(line)) {
+            if (new re("^" + that.prefixes, "").test(line)) {
                 return line;
             }
             return marked + "\n";
