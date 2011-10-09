@@ -1679,16 +1679,24 @@
 
                 if (link !== null) {
                     // (                          $1
-                    //     (?:^|[^\\])            beginning of the string or anything that's not a backslash
+                    //     [^\\]                  anything that's not a backslash
                     //     (?:\\\\)*              an even number (this includes zero) of backslashes
                     // )
-                    // (                          $2
+                    // (?=                        followed by
                     //     [[\]]                  an opening or closing bracket
                     // )
                     //
                     // In other words, a non-escaped bracket. These have to be escaped now to make sure they
                     // don't count as the end of the link or similar.
-                    chunk.selection = chunk.selection.replace(/((?:^|[^\\])(?:\\\\)*)([[\]])/g, "$1\\$2")
+                    // Note that the actual bracket has to be a lookahead, because (in case of to subsequent brackets),
+                    // the bracket in one match may be the "not a backslash" character in the next match, so it
+                    // should not be consumed by the first match.
+                    // The "prepend a space and finally remove it" steps makes sure there is a "not a backslash" at the
+                    // start of the string, so this also works if the selection begins with a bracket. We cannot solve
+                    // this by anchoring with ^, because in the case that the selection starts with two brackets, this
+                    // would mean a zero-width match at the start. Since zero-width matches advance the string position,
+                    // the first bracket could then not act as the "not a backslash" for the second.
+                    chunk.selection = (" " + chunk.selection).replace(/([^\\](?:\\\\)*)(?=[[\]])/g, "$1\\").substr(1);
                     
                     var linkDef = " [999]: " + properlyEncoded(link);
 
