@@ -684,7 +684,7 @@ else
                 }
             }
 
-            alt_text = alt_text.replace(/"/g, "&quot;");
+            alt_text = escapeCharacters(alt_text.replace(/"/g, "&quot;"), "*_[]()");
             url = escapeCharacters(url, "*_");
             var result = "<img src=\"" + url + "\" alt=\"" + alt_text + "\"";
 
