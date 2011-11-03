@@ -963,9 +963,11 @@
     // browser-specific hacks remain here.
     ui.createBackground = function () {
 
-        var background = doc.createElement("div");
+        var background = doc.createElement("div"),
+            style = background.style;
+        
         background.className = "wmd-prompt-background";
-        style = background.style;
+        
         style.position = "absolute";
         style.top = "0";
 
@@ -1070,9 +1072,9 @@
             dialog.appendChild(question);
 
             // The web form container for the text box and buttons.
-            var form = doc.createElement("form");
+            var form = doc.createElement("form"),
+                style = form.style;
             form.onsubmit = function () { return close(false); };
-            style = form.style;
             style.padding = "0";
             style.margin = "0";
             style.cssFloat = "left";
