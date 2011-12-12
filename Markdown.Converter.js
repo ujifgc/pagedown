@@ -588,7 +588,7 @@ else
             var result = "<a href=\"" + url + "\"";
 
             if (title != "") {
-                title = title.replace(/"/g, "&quot;");
+                title = attributeEncode(title);
                 title = escapeCharacters(title, "*_");
                 result += " title=\"" + title + "\"";
             }
@@ -656,6 +656,12 @@ else
 
             return text;
         }
+        
+        function attributeEncode(text) {
+            // unconditionally replace angle brackets here -- what ends up in an attribute (e.g. alt or title)
+            // never makes sense to have verbatim HTML in it (and the sanitizer would totally break it)
+            return text.replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+        }
 
         function writeImageTag(wholeMatch, m1, m2, m3, m4, m5, m6, m7) {
             var whole_match = m1;
@@ -683,8 +689,8 @@ else
                     return whole_match;
                 }
             }
-
-            alt_text = escapeCharacters(alt_text.replace(/"/g, "&quot;"), "*_[]()");
+            
+            alt_text = escapeCharacters(attributeEncode(alt_text), "*_[]()");
             url = escapeCharacters(url, "*_");
             var result = "<img src=\"" + url + "\" alt=\"" + alt_text + "\"";
 
@@ -692,7 +698,7 @@ else
             // Replicate this bug.
 
             //if (title != "") {
-            title = title.replace(/"/g, "&quot;");
+            title = attributeEncode(title);
             title = escapeCharacters(title, "*_");
             result += " title=\"" + title + "\"";
             //}
