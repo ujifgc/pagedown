@@ -1237,7 +1237,7 @@
                 var keyCode = key.charCode || key.keyCode;
                 // Character 13 is Enter
                 if (keyCode === 13) {
-                    fakeButton = {};
+                    var fakeButton = {};
                     fakeButton.textOp = bindCommand("doAutoindent");
                     doClick(fakeButton);
                 }
