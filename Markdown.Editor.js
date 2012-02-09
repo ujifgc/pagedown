@@ -317,8 +317,10 @@
         var flags;
 
         // Replace the flags with empty space and store them.
-        pattern = pattern.replace(/\/([gim]*)$/, "");
-        flags = re.$1;
+        pattern = pattern.replace(/\/([gim]*)$/, function (wholeMatch, flagsPart) {
+            flags = flagsPart;
+            return "";
+        });
 
         // Remove the slash delimiters on the regular expression.
         pattern = pattern.replace(/(^\/|\/$)/g, "");
