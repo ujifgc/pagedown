@@ -81,6 +81,11 @@
                     if (uiManager) // not available on the first call
                         uiManager.setUndoRedoButtonStates();
                 }, panels);
+                this.textOperation = function (f) {
+                    undoManager.setCommandMode();
+                    f();
+                    that.refreshPreview();
+                }
             }
 
             uiManager = new UIManager(idPostfix, panels, undoManager, previewManager, commandManager, help);
