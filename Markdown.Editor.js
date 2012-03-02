@@ -1733,11 +1733,24 @@
     // at the current indent level.
     commandProto.doAutoindent = function (chunk, postProcessing) {
 
-        var commandMgr = this;
+        var commandMgr = this,
+            fakeSelection = false;
 
         chunk.before = chunk.before.replace(/(\n|^)[ ]{0,3}([*+-]|\d+[.])[ \t]*\n$/, "\n\n");
         chunk.before = chunk.before.replace(/(\n|^)[ ]{0,3}>[ \t]*\n$/, "\n\n");
         chunk.before = chunk.before.replace(/(\n|^)[ \t]+\n$/, "\n\n");
+        
+        // There's no selection, end the cursor wasn't at the end of the line:
+        // The user wants to split the current list item / code line / blockquote line
+        // (for the latter it doesn't really matter) in two. Temporarily select the
+        // (rest of the) line to achieve this.
+        if (!chunk.selection && !/^[ \t]*(?:\n|$)/.test(chunk.after)) {
+            chunk.after = chunk.after.replace(/^[^\n]*/, function (wholeMatch) {
+                chunk.selection = wholeMatch;
+                return "";
+            });
+            fakeSelection = true;
+        }
 
         if (/(\n|^)[ ]{0,3}([*+-]|\d+[.])[ \t]+.*\n$/.test(chunk.before)) {
             if (commandMgr.doList) {
@@ -1753,6 +1766,11 @@
             if (commandMgr.doCode) {
                 commandMgr.doCode(chunk);
             }
+        }
+        
+        if (fakeSelection) {
+            chunk.after = chunk.selection + chunk.after;
+            chunk.selection = "";
         }
     };
 
@@ -1918,7 +1936,7 @@
             var nLinesBack = 1;
             var nLinesForward = 1;
 
-            if (/\n(\t|[ ]{4,}).*\n$/.test(chunk.before)) {
+            if (/(\n|^)(\t|[ ]{4,}).*\n$/.test(chunk.before)) {
                 nLinesBack = 0;
             }
             if (/^\n(\t|[ ]{4,})/.test(chunk.after)) {
@@ -1933,7 +1951,10 @@
             }
             else {
                 if (/^[ ]{0,3}\S/m.test(chunk.selection)) {
-                    chunk.selection = chunk.selection.replace(/^/gm, "    ");
+                    if (/\n/.test(chunk.selection))
+                        chunk.selection = chunk.selection.replace(/^/gm, "    ");
+                    else // if it's not multiline, do not select the four added spaces; this is more consistent with the doList behavior
+                        chunk.before += "    ";
                 }
                 else {
                     chunk.selection = chunk.selection.replace(/^[ ]{4}/gm, "");
