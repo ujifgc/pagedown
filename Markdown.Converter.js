@@ -948,7 +948,7 @@ else
                     codeblock = codeblock.replace(/^\n+/g, ""); // trim leading newlines
                     codeblock = codeblock.replace(/\n+$/g, ""); // trim trailing whitespace
 
-                    codeblock = "<pre><code>" + codeblock + "\n</code></pre>";
+                    codeblock = '<pre class="prettyprint linenums"><code>' + codeblock + '\n</code></pre>';
 
                     return "\n\n" + codeblock + "\n\n" + nextChar;
                 }
@@ -1223,13 +1223,21 @@ else
             /gi, _DoAutoLinks_callback());
             */
 
-            /* disabling email autolinking, since we don't do that on the server, either
-            text = text.replace(/<(?:mailto:)?([-.\w]+\@[-a-z0-9]+(\.[-a-z0-9]+)*\.[a-z]+)>/gi,
-                function(wholeMatch,m1) {
-                    return _EncodeEmailAddress( _UnescapeSpecialChars(m1) );
+            var email_replacer = function(wholematch, m1) {
+                var mailto = 'mailto:'
+                var link
+                var email
+                if (m1.substring(0, mailto.length) != mailto){
+                    link = mailto + m1;
+                    email = m1;
+                } else {
+                    link = m1;
+                    email = m1.substring(mailto.length, m1.length);
                 }
-            );
-            */
+                return "<a href=\"" + link + "\">" + pluginHooks.plainLinkText(email) + "</a>";
+            }
+            text = text.replace(/<((?:mailto:)?([-.\w]+\@[-a-z0-9]+(\.[-a-z0-9]+)*\.[a-z]+))>/gi, email_replacer);
+
             return text;
         }
 
@@ -1299,7 +1307,11 @@ else
                     return "%24";
                 if (match == ":") {
                     if (offset == len - 1 || /[0-9\/]/.test(url.charAt(offset + 1)))
-                        return ":"
+                        return ":";
+                    if (url.substring(0, 'mailto:'.length) === 'mailto:')
+                        return ":";
+                    if (url.substring(0, 'magnet:'.length) === 'magnet:')
+                        return ":";
                 }
                 return "%" + match.charCodeAt(0).toString(16);
             });
