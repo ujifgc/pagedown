@@ -45,6 +45,9 @@ http://google.com
 http://stackoverflow.com
 
 It also includes a help button.
+
+Finally, note that when you press Ctrl-Q or click the "Blockquote" button (without having a
+selection), this editor creates an example text that's different from the first editor.
 </textarea>
         </div>
         <div id="wmd-preview-second" class="wmd-panel wmd-preview"></div>
@@ -67,8 +70,11 @@ It also includes a help button.
                 });
                 
                 var help = function () { alert("Do you need help?"); }
-                
-                var editor2 = new Markdown.Editor(converter2, "-second", { handler: help });
+                var options = {
+                    helpButton: { handler: help },
+                    strings: { quoteexample: "whatever you're quoting, put it right here" }
+                };
+                var editor2 = new Markdown.Editor(converter2, "-second", options);
                 
                 editor2.run();
             })();

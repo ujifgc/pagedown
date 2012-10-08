@@ -1,5 +1,10 @@
+// Usage:
+//
+// var myConverter = new Markdown.Converter(myEditor, null, { strings: Markdown.local.fr });
+
 (function () {
-	Markdown.local = {
+		Markdown.local = Markdown.local || {};
+		Markdown.local.fr = {
 		bold: "Gras <strong> Ctrl+B",
 		boldexample: "texte en gras",
 
