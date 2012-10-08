@@ -132,6 +132,11 @@
                     if (uiManager) // not available on the first call
                         uiManager.setUndoRedoButtonStates();
                 }, panels);
+                this.textOperation = function (f) {
+                    undoManager.setCommandMode();
+                    f();
+                    that.refreshPreview();
+                }
             }
 
             uiManager = new UIManager(idPostfix, panels, undoManager, previewManager, commandManager, options.helpButton, getString);
@@ -368,8 +373,10 @@
         var flags;
 
         // Replace the flags with empty space and store them.
-        pattern = pattern.replace(/\/([gim]*)$/, "");
-        flags = re.$1;
+        pattern = pattern.replace(/\/([gim]*)$/, function (wholeMatch, flagsPart) {
+            flags = flagsPart;
+            return "";
+        });
 
         // Remove the slash delimiters on the regular expression.
         pattern = pattern.replace(/(^\/|\/$)/g, "");
@@ -1014,9 +1021,11 @@
     // browser-specific hacks remain here.
     ui.createBackground = function () {
 
-        var background = doc.createElement("div");
+        var background = doc.createElement("div"),
+            style = background.style;
+        
         background.className = "wmd-prompt-background";
-        style = background.style;
+        
         style.position = "absolute";
         style.top = "0";
 
@@ -1086,13 +1095,9 @@
             }
             else {
                 // Fixes common pasting errors.
-                text = text.replace('http://http://', 'http://');
-                text = text.replace('http://https://', 'https://');
-                text = text.replace('http://ftp://', 'ftp://');
-
-                if (text.indexOf('http://') === -1 && text.indexOf('ftp://') === -1 && text.indexOf('https://') === -1) {
+                text = text.replace(/^http:\/\/(https?|ftp):\/\//, '$1://');
+                if (!/^(?:https?|ftp):\/\//.test(text))
                     text = 'http://' + text;
-                }
             }
 
             dialog.parentNode.removeChild(dialog);
@@ -1121,9 +1126,9 @@
             dialog.appendChild(question);
 
             // The web form container for the text box and buttons.
-            var form = doc.createElement("form");
+            var form = doc.createElement("form"),
+                style = form.style;
             form.onsubmit = function () { return close(false); };
-            style = form.style;
             style.padding = "0";
             style.margin = "0";
             style.cssFloat = "left";
@@ -1222,7 +1227,7 @@
         util.addEvent(inputBox, keyEvent, function (key) {
 
             // Check to see if we have a button key and, if so execute the callback.
-            if ((key.ctrlKey || key.metaKey) && !key.altKey) {
+            if ((key.ctrlKey || key.metaKey) && !key.altKey && !key.shiftKey) {
 
                 var keyCode = key.charCode || key.keyCode;
                 var keyCodeStr = String.fromCharCode(keyCode).toLowerCase();
@@ -1290,7 +1295,7 @@
                 var keyCode = key.charCode || key.keyCode;
                 // Character 13 is Enter
                 if (keyCode === 13) {
-                    fakeButton = {};
+                    var fakeButton = {};
                     fakeButton.textOp = bindCommand("doAutoindent");
                     doClick(fakeButton);
                 }
@@ -1537,10 +1542,11 @@
 
     commandProto.wrap = function (chunk, len) {
         this.unwrap(chunk);
-        var regex = new re("(.{1," + len + "})( +|$\\n?)", "gm");
+        var regex = new re("(.{1," + len + "})( +|$\\n?)", "gm"),
+            that = this;
 
         chunk.selection = chunk.selection.replace(regex, function (line, marked) {
-            if (new re("^" + this.prefixes, "").test(line)) {
+            if (new re("^" + that.prefixes, "").test(line)) {
                 return line;
             }
             return marked + "\n";
@@ -1690,7 +1696,7 @@
             });
             if (title) {
                 title = title.trim ? title.trim() : title.replace(/^\s*/, "").replace(/\s*$/, "");
-                title = $.trim(title).replace(/"/g, "quot;").replace(/\(/g, "&#40;").replace(/\)/g, "&#41;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                title = title.replace(/"/g, "quot;").replace(/\(/g, "&#40;").replace(/\)/g, "&#41;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             }
             return title ? link + ' "' + title + '"' : link;
         });
@@ -1702,7 +1708,7 @@
         chunk.findTags(/\s*!?\[/, /\][ ]?(?:\n[ ]*)?(\[.*?\])?/);
         var background;
 
-        if (chunk.endTag.length > 1) {
+        if (chunk.endTag.length > 1 && chunk.startTag.length > 0) {
 
             chunk.startTag = chunk.startTag.replace(/!?\[/, "");
             chunk.endTag = "";
@@ -1710,6 +1716,12 @@
 
         }
         else {
+            
+            // We're moving start and end tag back into the selection, since (as we're in the else block) we're not
+            // *removing* a link, but *adding* one, so whatever findTags() found is now back to being part of the
+            // link text. linkEnteredCallback takes care of escaping any brackets.
+            chunk.selection = chunk.startTag + chunk.selection + chunk.endTag;
+            chunk.startTag = chunk.endTag = "";
 
             if (/\n\n/.test(chunk.selection)) {
                 this.addLinkDef(chunk, null);
@@ -1723,8 +1735,26 @@
                 background.parentNode.removeChild(background);
 
                 if (link !== null) {
-
-                    chunk.startTag = chunk.endTag = "";
+                    // (                          $1
+                    //     [^\\]                  anything that's not a backslash
+                    //     (?:\\\\)*              an even number (this includes zero) of backslashes
+                    // )
+                    // (?=                        followed by
+                    //     [[\]]                  an opening or closing bracket
+                    // )
+                    //
+                    // In other words, a non-escaped bracket. These have to be escaped now to make sure they
+                    // don't count as the end of the link or similar.
+                    // Note that the actual bracket has to be a lookahead, because (in case of to subsequent brackets),
+                    // the bracket in one match may be the "not a backslash" character in the next match, so it
+                    // should not be consumed by the first match.
+                    // The "prepend a space and finally remove it" steps makes sure there is a "not a backslash" at the
+                    // start of the string, so this also works if the selection begins with a bracket. We cannot solve
+                    // this by anchoring with ^, because in the case that the selection starts with two brackets, this
+                    // would mean a zero-width match at the start. Since zero-width matches advance the string position,
+                    // the first bracket could then not act as the "not a backslash" for the second.
+                    chunk.selection = (" " + chunk.selection).replace(/([^\\](?:\\\\)*)(?=[[\]])/g, "$1\\").substr(1);
+                    
                     var linkDef = " [999]: " + properlyEncoded(link);
 
                     var num = that.addLinkDef(chunk, linkDef);
@@ -1760,11 +1790,24 @@
     // at the current indent level.
     commandProto.doAutoindent = function (chunk, postProcessing) {
 
-        var commandMgr = this;
+        var commandMgr = this,
+            fakeSelection = false;
 
         chunk.before = chunk.before.replace(/(\n|^)[ ]{0,3}([*+-]|\d+[.])[ \t]*\n$/, "\n\n");
         chunk.before = chunk.before.replace(/(\n|^)[ ]{0,3}>[ \t]*\n$/, "\n\n");
         chunk.before = chunk.before.replace(/(\n|^)[ \t]+\n$/, "\n\n");
+        
+        // There's no selection, end the cursor wasn't at the end of the line:
+        // The user wants to split the current list item / code line / blockquote line
+        // (for the latter it doesn't really matter) in two. Temporarily select the
+        // (rest of the) line to achieve this.
+        if (!chunk.selection && !/^[ \t]*(?:\n|$)/.test(chunk.after)) {
+            chunk.after = chunk.after.replace(/^[^\n]*/, function (wholeMatch) {
+                chunk.selection = wholeMatch;
+                return "";
+            });
+            fakeSelection = true;
+        }
 
         if (/(\n|^)[ ]{0,3}([*+-]|\d+[.])[ \t]+.*\n$/.test(chunk.before)) {
             if (commandMgr.doList) {
@@ -1780,6 +1823,11 @@
             if (commandMgr.doCode) {
                 commandMgr.doCode(chunk);
             }
+        }
+        
+        if (fakeSelection) {
+            chunk.after = chunk.selection + chunk.after;
+            chunk.selection = "";
         }
     };
 
@@ -1945,7 +1993,7 @@
             var nLinesBack = 1;
             var nLinesForward = 1;
 
-            if (/\n(\t|[ ]{4,}).*\n$/.test(chunk.before)) {
+            if (/(\n|^)(\t|[ ]{4,}).*\n$/.test(chunk.before)) {
                 nLinesBack = 0;
             }
             if (/^\n(\t|[ ]{4,})/.test(chunk.after)) {
@@ -1960,7 +2008,10 @@
             }
             else {
                 if (/^[ ]{0,3}\S/m.test(chunk.selection)) {
-                    chunk.selection = chunk.selection.replace(/^/gm, "    ");
+                    if (/\n/.test(chunk.selection))
+                        chunk.selection = chunk.selection.replace(/^/gm, "    ");
+                    else // if it's not multiline, do not select the four added spaces; this is more consistent with the doList behavior
+                        chunk.before += "    ";
                 }
                 else {
                     chunk.selection = chunk.selection.replace(/^[ ]{4}/gm, "");
