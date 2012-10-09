@@ -574,7 +574,7 @@
                 var keyCode = event.charCode || event.keyCode;
                 var keyCodeChar = String.fromCharCode(keyCode);
 
-                switch (keyCodeChar) {
+                switch (keyCodeChar.toLowerCase()) {
 
                     case "y":
                         undoObj.redo();
