@@ -2014,7 +2014,7 @@
                         chunk.before += "    ";
                 }
                 else {
-                    chunk.selection = chunk.selection.replace(/^[ ]{4}/gm, "");
+                    chunk.selection = chunk.selection.replace(/^(?:[ ]{4}|[ ]{0,3}\t)/gm, "");
                 }
             }
         }
