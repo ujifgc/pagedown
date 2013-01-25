@@ -1194,6 +1194,33 @@ else
             text = text.replace(/\\([`*_{}\[\]()>#+-.!])/g, escapeCharacters_callback);
             return text;
         }
+        
+        function handleTrailingParens(wholeMatch, protocol, link, tail) {
+            if (link.charAt(link.length - 1) !== ")")
+                return "<" + protocol + link + ">" + tail;
+            var parens = link.match(/[()]/g);
+            var level = 0;
+            for (var i = 0; i < parens.length; i++) {
+                if (parens[i] === "(") {
+                    if (level <= 0)
+                        level = 1;
+                    else
+                        level++;
+                }
+                else {
+                    level--;
+                }
+            }
+            if (level < 0) {
+                var re = new RegExp("\\){1," + (-level) + "}$");
+                link = link.replace(re, function (trailingParens) {
+                    tail = trailingParens + tail;
+                    return "";
+                });
+            }
+            
+            return "<" + protocol + link + ">" + tail;
+        }
 
         function _DoAutoLinks(text) {
 
@@ -1202,7 +1229,7 @@ else
 
             // automatically add < and > around unadorned raw hyperlinks
             // must be preceded by space/BOF and followed by non-word/EOF character    
-            text = text.replace(/(^|\s)(https?|ftp)(:\/\/[-A-Z0-9+&@#\/%?=~_|\[\]\(\)!:,\.;]*[-A-Z0-9+&@#\/%=~_|\[\]])($|\W)/gi, "$1<$2$3>$4");
+            text = text.replace(/\b(https?|ftp)(:\/\/[-A-Z0-9+&@#\/%?=~_|\[\]\(\)!:,\.;]*[-A-Z0-9+&@#\/%=~_|\[\])])($|\W)/gi, handleTrailingParens);
 
             //  autolink anything like <http://example.com>
             
