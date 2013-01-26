@@ -1195,9 +1195,11 @@ else
             return text;
         }
         
-        function handleTrailingParens(wholeMatch, protocol, link, tail) {
+        function handleTrailingParens(wholeMatch, lookbehind, protocol, link) {
+            if (lookbehind)
+                return wholeMatch;
             if (link.charAt(link.length - 1) !== ")")
-                return "<" + protocol + link + ">" + tail;
+                return "<" + protocol + link + ">";
             var parens = link.match(/[()]/g);
             var level = 0;
             for (var i = 0; i < parens.length; i++) {
@@ -1211,10 +1213,11 @@ else
                     level--;
                 }
             }
+            var tail = "";
             if (level < 0) {
                 var re = new RegExp("\\){1," + (-level) + "}$");
                 link = link.replace(re, function (trailingParens) {
-                    tail = trailingParens + tail;
+                    tail = trailingParens;
                     return "";
                 });
             }
@@ -1228,8 +1231,10 @@ else
             // *except* for the <http://www.foo.com> case
 
             // automatically add < and > around unadorned raw hyperlinks
-            // must be preceded by space/BOF and followed by non-word/EOF character    
-            text = text.replace(/\b(https?|ftp)(:\/\/[-A-Z0-9+&@#\/%?=~_|\[\]\(\)!:,\.;]*[-A-Z0-9+&@#\/%=~_|\[\])])($|\W)/gi, handleTrailingParens);
+            // must be preceded by a non-word character (and not by =" or <) and followed by non-word/EOF character
+            // simulating the lookbehind in a consuming way is okay here, since a URL can neither and with a " nor
+            // with a <, so there is no risk of overlapping matches.
+            text = text.replace(/(="|<)?\b(https?|ftp)(:\/\/[-A-Z0-9+&@#\/%?=~_|\[\]\(\)!:,\.;]*[-A-Z0-9+&@#\/%=~_|\[\])])(?=$|\W)/gi, handleTrailingParens);
 
             //  autolink anything like <http://example.com>
             
