@@ -4,6 +4,12 @@ body
     font-family: sans-serif;
 }
 
+blockquote {
+	border-left: 2px dotted #888;
+	padding-left: 5px;
+	background: #d0f0ff;
+}
+
 .wmd-panel
 {
 	margin-left: 25%;
