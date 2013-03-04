@@ -1,6 +1,6 @@
 // Usage:
 //
-// var myConverter = new Markdown.Converter(myEditor, null, { strings: Markdown.local.fr });
+// var myConverter = new Markdown.Editor(myConverter, null, { strings: Markdown.local.fr });
 
 (function () {
         Markdown.local = Markdown.local || {};
