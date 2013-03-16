@@ -62,6 +62,20 @@ selection), this editor creates an example text that's different from the first 
         </div>
         <div id="wmd-preview-second" class="wmd-panel wmd-preview"></div>
 
+        <div class="wmd-panel">
+            <div id="wmd-button-bar-third"></div>
+            <textarea class="wmd-input" id="wmd-input-third">
+This is the *third* editor.
+------------------------------
+
+Just plain **Markdown**, except that the preview refresh events have been disabled.
+
+Instead, there is an interval running every 2s that will call refresh.
+
+</textarea>
+        </div>
+        <div id="wmd-preview-third" class="wmd-panel wmd-preview"></div>
+
 
         <script type="text/javascript">
             (function () {
@@ -95,6 +109,16 @@ selection), this editor creates an example text that's different from the first 
                 var editor2 = new Markdown.Editor(converter2, "-second", options);
                 
                 editor2.run();
+
+                var converter3 = Markdown.getSanitizingConverter();
+                
+                var editor3 = new Markdown.Editor(converter3, "-third", {manualPreview: true});
+                
+                editor3.run();
+
+                setInterval(function(){
+                    editor3.refreshPreview();
+                }, 2000);
             })();
         </script>
     </body>
