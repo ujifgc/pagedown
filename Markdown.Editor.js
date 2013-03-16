@@ -80,6 +80,10 @@
     // `defaultStrings` above, so you can just override some string displayed
     // to the user on a case-by-case basis, or translate all strings to
     // a different language.
+    //  options.manualPreview = true/false
+    //  'manualPreview' is an option to disable the automatic preview
+    //  refresh event binding. The caller is deciding to control when the
+    //  preview refreshes if the option is set to 'true'.
     //
     // For backwards compatibility reasons, the `options` argument can also
     // be just the `helpButton` object, and `strings.help` can also be set via
@@ -123,7 +127,7 @@
 
             panels = new PanelCollection(idPostfix);
             var commandManager = new CommandManager(hooks, getString);
-            var previewManager = new PreviewManager(markdownConverter, panels, function () { hooks.onPreviewRefresh(); });
+            var previewManager = new PreviewManager(markdownConverter, panels, function () { hooks.onPreviewRefresh(); }, options.manualPreview);
             var undoManager, uiManager;
 
             if (!/\?noundo/.test(doc.location.href)) {
@@ -820,7 +824,7 @@
         this.init();
     };
 
-    function PreviewManager(converter, panels, previewRefreshCallback) {
+    function PreviewManager(converter, panels, previewRefreshCallback, manualRefresh) {
 
         var managerObj = this;
         var timeout;
@@ -910,16 +914,20 @@
             }
         };
 
-        var getScaleFactor = function (panel) {
-            if (panel.scrollHeight <= panel.clientHeight) {
+        var getScaleFactor = function (panel, scrollHeight, clientHeight) {
+            if (scrollHeight <= clientHeight) {
                 return 1;
             }
-            return panel.scrollTop / (panel.scrollHeight - panel.clientHeight);
+            return panel.scrollTop / (scrollHeight - clientHeight);
         };
 
         var setPanelScrollTops = function () {
             if (panels.preview) {
-                panels.preview.scrollTop = (panels.preview.scrollHeight - panels.preview.clientHeight) * getScaleFactor(panels.preview);
+                var preview = panels.preview;
+                var scrollHeight = preview.scrollHeight;
+                var clientHeight = preview.clientHeight;
+
+                preview.scrollTop = (scrollHeight - clientHeight) * getScaleFactor(preview, scrollHeight, clientHeight);
             }
         };
 
@@ -1004,7 +1012,11 @@
 
         var init = function () {
 
-            setupEvents(panels.input, applyTimeout);
+            //Caller did not opt to refresh preview
+            //manually, bind input events to trigger refresh
+            if(!manualRefresh){
+                setupEvents(panels.input, applyTimeout);   
+            }
             makePreviewHtml();
 
             if (panels.preview) {
