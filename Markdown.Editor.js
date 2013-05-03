@@ -298,7 +298,7 @@
     // and 8) and ONLY on button clicks.  Keyboard shortcuts work
     // normally since the focus never leaves the textarea.
     function PanelCollection(postfix) {
-        this.buttonBar = doc.getElementById("wmd-button-bar" + postfix);
+        this.buttonBar = doc.getElementById("wmd-button-bar" + postfix) || doc.createElement("div");
         this.preview = doc.getElementById("wmd-preview" + postfix);
         this.input = doc.getElementById("wmd-input" + postfix);
     };
@@ -1375,7 +1375,7 @@
         };
 
         function setupButton(button, isEnabled) {
-
+            
             var normalYShift = "0px";
             var disabledYShift = "-20px";
             var highlightYShift = "-40px";
