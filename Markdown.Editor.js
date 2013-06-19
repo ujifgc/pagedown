@@ -123,12 +123,14 @@
 
             panels = new PanelCollection(idPostfix);
             var commandManager = new CommandManager(hooks, getString);
-            var previewManager = new PreviewManager(markdownConverter, panels, function () { hooks.onPreviewRefresh(); });
+            var previewManager;
+            if(markdownConverter)
+                previewManager = new PreviewManager(markdownConverter, panels, function () { hooks.onPreviewRefresh(); });
             var undoManager, uiManager;
 
             if (!/\?noundo/.test(doc.location.href)) {
                 undoManager = new UndoManager(function () {
-                    previewManager.refresh();
+                    if(previewManager) previewManager.refresh();
                     if (uiManager) // not available on the first call
                         uiManager.setUndoRedoButtonStates();
                 }, panels);
@@ -142,9 +144,10 @@
             uiManager = new UIManager(idPostfix, panels, undoManager, previewManager, commandManager, options.helpButton, getString);
             uiManager.setUndoRedoButtonStates();
 
-            var forceRefresh = that.refreshPreview = function () { previewManager.refresh(true); };
-
-            forceRefresh();
+            if(previewManager){
+                var forceRefresh = that.refreshPreview = function () { previewManager.refresh(true); };
+                forceRefresh();
+            }
         };
 
     }
@@ -1358,7 +1361,8 @@
                     }
 
                     state.restore();
-                    previewManager.refresh();
+                    if(previewManager)
+                        previewManager.refresh();
                 };
 
                 var noCleanup = button.textOp(chunks, fixupInputArea);
