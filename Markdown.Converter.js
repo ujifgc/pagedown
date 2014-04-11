@@ -228,7 +228,7 @@ else
 
             /*
             text = text.replace(/
-                ^[ ]{0,3}\[(.+)\]:  // id = $1  attacklab: g_tab_width - 1
+                ^[ ]{0,3}\[([^\[\]]+)\]:  // id = $1  attacklab: g_tab_width - 1
                 [ \t]*
                 \n?                 // maybe *one* newline
                 [ \t]*
@@ -249,7 +249,7 @@ else
             /gm, function(){...});
             */
 
-            text = text.replace(/^[ ]{0,3}\[(.+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?(?=\s|$)[ \t]*\n?[ \t]*((\n*)["(](.+?)[")][ \t]*)?(?:\n+)/gm,
+            text = text.replace(/^[ ]{0,3}\[([^\[\]]+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?(?=\s|$)[ \t]*\n?[ \t]*((\n*)["(](.+?)[")][ \t]*)?(?:\n+)/gm,
                 function (wholeMatch, m1, m2, m3, m4, m5) {
                     m1 = m1.toLowerCase();
                     g_urls.set(m1, _EncodeAmpsAndAngles(m2));  // Link IDs are case-insensitive
