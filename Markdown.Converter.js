@@ -5,7 +5,7 @@ if (typeof exports === "object" && typeof require === "function") // we're in a 
     Markdown = exports;
 else
     Markdown = {};
-    
+
 // The following text is included for historical reasons, but should
 // be taken with a pinch of salt; it's not all true anymore.
 
@@ -308,7 +308,7 @@ else
                 )                       // attacklab: there are sentinel newlines at end of document
             /gm,function(){...}};
             */
-            text = text.replace(/^(<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del)\b[^\r]*?\n<\/\2>[ \t]*(?=\n+))/gm, hashElement);
+            text = text.replace(/^(<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del)\b[^\r]*?\n<\/\2>[ \t]*(?=\n+))/gm, hashMatch);
 
             //
             // Now match more liberally, simply from `\n<tag>` to `</tag>\n`
@@ -328,7 +328,7 @@ else
                 )                       // attacklab: there are sentinel newlines at end of document
             /gm,function(){...}};
             */
-            text = text.replace(/^(<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math)\b[^\r]*?.*<\/\2>[ \t]*(?=\n+)\n)/gm, hashElement);
+            text = text.replace(/^(<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math)\b[^\r]*?.*<\/\2>[ \t]*(?=\n+)\n)/gm, hashMatch);
 
             // Special case just for <hr />. It was easier to make a special case than
             // to make the other regex more complicated.  
@@ -345,9 +345,9 @@ else
                     [ \t]*
                     (?=\n{2,})      // followed by a blank line
                 )
-            /g,hashElement);
+            /g,hashMatch);
             */
-            text = text.replace(/\n[ ]{0,3}((<(hr)\b([^<>])*?\/?>)[ \t]*(?=\n{2,}))/g, hashElement);
+            text = text.replace(/\n[ ]{0,3}((<(hr)\b([^<>])*?\/?>)[ \t]*(?=\n{2,}))/g, hashMatch);
 
             // Special case for standalone HTML comments:
 
@@ -362,9 +362,9 @@ else
                     [ \t]*
                     (?=\n{2,})                                  // followed by a blank line
                 )
-            /g,hashElement);
+            /g,hashMatch);
             */
-            text = text.replace(/\n\n[ ]{0,3}(<!(--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)>[ \t]*(?=\n{2,}))/g, hashElement);
+            text = text.replace(/\n\n[ ]{0,3}(<!(--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)>[ \t]*(?=\n{2,}))/g, hashMatch);
 
             // PHP and ASP-style processor instructions (<?...?> and <%...%>)
 
@@ -383,26 +383,21 @@ else
                     [ \t]*
                     (?=\n{2,})      // followed by a blank line
                 )
-            /g,hashElement);
+            /g,hashMatch);
             */
-            text = text.replace(/(?:\n\n)([ ]{0,3}(?:<([?%])[^\r]*?\2>)[ \t]*(?=\n{2,}))/g, hashElement);
+            text = text.replace(/(?:\n\n)([ ]{0,3}(?:<([?%])[^\r]*?\2>)[ \t]*(?=\n{2,}))/g, hashMatch);
 
             return text;
         }
 
-        function hashElement(wholeMatch, m1) {
-            var blockText = m1;
-
-            // Undo double lines
-            blockText = blockText.replace(/^\n+/, "");
-
-            // strip trailing blank lines
-            blockText = blockText.replace(/\n+$/g, "");
-
+        function hashBlock(text) {
+            text = text.replace(/(^\n+|\n+$)/g, "");
             // Replace the element text with a marker ("~KxK" where x is its key)
-            blockText = "\n\n~K" + (g_html_blocks.push(blockText) - 1) + "K\n\n";
+            return "\n\n~K" + (g_html_blocks.push(text) - 1) + "K\n\n";
+        }
 
-            return blockText;
+        function hashMatch(wholeMatch, m1) {
+            return hashBlock(m1);
         }
         
         var blockGamutHookCallback = function (t) { return _RunBlockGamut(t); }
@@ -996,11 +991,6 @@ else
             text = text.replace(/~0/, "");
 
             return text;
-        }
-
-        function hashBlock(text) {
-            text = text.replace(/(^\n+|\n+$)/g, "");
-            return "\n\n~K" + (g_html_blocks.push(text) - 1) + "K\n\n";
         }
 
         function _DoCodeSpans(text) {
