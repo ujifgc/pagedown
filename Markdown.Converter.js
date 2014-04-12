@@ -1079,10 +1079,32 @@ else
         function _DoItalicsAndBold(text) {
 
             // <strong> must go first:
-            text = text.replace(/([\W_]|^)(\*\*|__)(?=\S)([^\r]*?\S[\*_]*)\2(?=[\W_]|$)/g,
+            
+            // (^|[\W_])           Start with a non-letter or beginning of string. Store in \1.
+            // (?:(?!\1)|(?=^))    Either the next character is *not* the same as the previous,
+            //                     or we started at the end of the string (in which case the previous
+            //                     group had zero width, so we're still there). Because the next
+            //                     character is the marker, this means that if there are e.g. multiple
+            //                     underscores in a row, we can only match the left-most ones (which
+            //                     prevents foo___bar__ from getting bolded)
+            // (\*|_)              The marker character itself, asterisk or underscore. Store in \2.
+            // \2                  The marker again, since bold needs two.
+            // (?=\S)              The first bolded character cannot be a space.
+            // ([^\r]*?\S)         The actual bolded string. At least one character, and it cannot *end*
+            //                     with a space either. Note that like in many other places, [^\r] is
+            //                     just a workaround for JS' lack of single-line regexes; it's equivalent
+            //                     to a . in an /s regex, because the string cannot contain any \r (they
+            //                     are removed in the normalizing step).
+            // \2\2                The marker character, twice -- end of bold.
+            // (?!\2)              Not followed by another marker character (ensuring that we match the
+            //                     rightmost two in a longer row)...
+            // (?=[\W_]|$)         ...but by any other non-word character or the end of string.
+            text = text.replace(/(^|[\W_])(?:(?!\1)|(?=^))(\*|_)\2(?=\S)([^\r]*?\S)\2\2(?!\2)(?=[\W_]|$)/g,
             "$1<strong>$3</strong>");
 
-            text = text.replace(/([\W_]|^)(\*|_)(?=\S)([^\r\*_]*?\S)\2(?=[\W_]|$)/g,
+            // This is almost identical to the <strong> regex, except 1) there's obviously just one marker
+            // character, and 2) the italicized string cannot contain the marker character.
+            text = text.replace(/(^|[\W_])(?:(?!\1)|(?=^))(\*|_)(?=\S)((?:(?!\2)[^\r])*?\S)\2(?!\2)(?=[\W_]|$)/g,
             "$1<em>$3</em>");
 
             return text;
