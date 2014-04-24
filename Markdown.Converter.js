@@ -1021,8 +1021,9 @@ else
 
             /*
             text = text.replace(/
-                (^|[^\\])       // Character before opening ` can't be a backslash
+                (^|[^\\`])      // Character before opening ` can't be a backslash or backtick
                 (`+)            // $2 = Opening run of `
+                (?!`)           // and no more backticks -- match the full run
                 (               // $3 = The code block
                     [^\r]*?
                     [^`]        // attacklab: work around lack of lookbehind
@@ -1032,7 +1033,7 @@ else
             /gm, function(){...});
             */
 
-            text = text.replace(/(^|[^\\])(`+)([^\r]*?[^`])\2(?!`)/gm,
+            text = text.replace(/(^|[^\\`])(`+)(?!`)([^\r]*?[^`])\2(?!`)/gm,
                 function (wholeMatch, m1, m2, m3, m4) {
                     var c = m3;
                     c = c.replace(/^([ \t]*)/g, ""); // leading whitespace
