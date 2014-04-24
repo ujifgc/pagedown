@@ -93,7 +93,7 @@ else
     // caused an exception (and hence stopped the rendering) when the user entered
     // e.g. [push] or [__proto__]. Adding a prefix to the actual key prevents this
     // (since no builtin property starts with "s_"). See
-    // http://meta.stackoverflow.com/questions/64655/strange-wmd-bug
+    // http://meta.stackexchange.com/questions/64655/strange-wmd-bug
     // (granted, switching from Array() to Object() alone would have left only __proto__
     // to be a problem)
     function SaveHash() { }
@@ -357,7 +357,7 @@ else
                 [ ]{0,3}                                        // attacklab: g_tab_width - 1
                 (                                               // save in $1
                     <!
-                    (--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)   // see http://www.w3.org/TR/html-markup/syntax.html#comments and http://meta.stackoverflow.com/q/95256
+                    (--(?:|(?:[^>-]|-[^>])(?:[^-]|-[^-])*)--)   // see http://www.w3.org/TR/html-markup/syntax.html#comments and http://meta.stackexchange.com/q/95256
                     >
                     [ \t]*
                     (?=\n{2,})                                  // followed by a blank line
@@ -484,7 +484,7 @@ else
 
             text = text.replace(regex, function (wholeMatch) {
                 var tag = wholeMatch.replace(/(.)<\/?code>(?=.)/g, "$1`");
-                tag = escapeCharacters(tag, wholeMatch.charAt(1) == "!" ? "\\`*_/" : "\\`*_"); // also escape slashes in comments to prevent autolinking there -- http://meta.stackoverflow.com/questions/95987
+                tag = escapeCharacters(tag, wholeMatch.charAt(1) == "!" ? "\\`*_/" : "\\`*_"); // also escape slashes in comments to prevent autolinking there -- http://meta.stackexchange.com/questions/95987
                 return tag;
             });
 
