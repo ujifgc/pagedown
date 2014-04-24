@@ -1299,7 +1299,13 @@ else
 
             //  autolink anything like <http://example.com>
             
-            var replacer = function (wholematch, m1) { return "<a href=\"" + encodeProblemUrlChars(m1) + "\">" + pluginHooks.plainLinkText(m1) + "</a>"; }
+
+            var replacer = function (wholematch, m1) {
+                var url = encodeProblemUrlChars(m1);
+                url = escapeCharacters(url, "*_");
+                
+                return "<a href=\"" + url + "\">" + pluginHooks.plainLinkText(m1) + "</a>";
+            };
             text = text.replace(/<((https?|ftp):[^'">\s]+)>/gi, replacer);
 
             // Email addresses: <address@domain.foo>
@@ -1378,7 +1384,7 @@ else
         //  attacklab: Utility functions
         //
 
-        var _problemUrlChars = /(?:["'*()[\]:_]|~D)/g;
+        var _problemUrlChars = /(?:["'*()[\]:]|~D)/g;
 
         // hex-encodes some unusual "problem" chars in URLs to avoid URL detection problems 
         function encodeProblemUrlChars(url) {
