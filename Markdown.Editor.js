@@ -1686,14 +1686,39 @@
     // sure the URL and the optinal title are "nice".
     function properlyEncoded(linkdef) {
         return linkdef.replace(/^\s*(.*?)(?:\s+"(.+)")?\s*$/, function (wholematch, link, title) {
-            link = link.replace(/\?.*$/, function (querypart) {
-                return querypart.replace(/\+/g, " "); // in the query string, a plus and a space are identical
-            });
-            link = decodeURIComponent(link); // unencode first, to prevent double encoding
-            link = encodeURI(link).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29');
-            link = link.replace(/\?.*$/, function (querypart) {
-                return querypart.replace(/\+/g, "%2b"); // since we replaced plus with spaces in the query part, all pluses that now appear where originally encoded
-            });
+            
+            var inQueryString = false;
+
+            // The last alternative, `[^\w\d-./]`, is just a shortcut that lets us skip
+            // the most common characters in URLs. Replacing it with `.` would not change
+            // the result, because encodeURI returns those characters unchanged, but it
+            // would mean lots of unnecessary replacement calls
+            link = link.replace(/%(?:[\da-fA-F]{2})|\?|\+|[^\w\d-./]/g, function (match) {
+                // Valid percent encoding. Could just return it as is, but we follow RFC3986
+                // Section 2.1 which says "For consistency, URI producers and normalizers
+                // should use uppercase hexadecimal digits for all percent-encodings."
+                // Note that we also handle (illegal) stand-alone percent characters by
+                // replacing them with "%25"
+                if (match.length === 3 && match.charAt(0) == "%") {
+                    return match.toUpperCase();
+                }
+                switch (match) {
+                    case "?":
+                        inQueryString = true;
+                        return "?";
+                        break;
+                    
+                    // In the query string, a plus and a space are identical -- normalize.
+                    // Not strictly necessary, but identical behavior to the previous version
+                    // of this function.
+                    case "+":
+                        if (inQueryString)
+                            return "%20";
+                        break;
+                }
+                return encodeURI(match);
+            })
+            
             if (title) {
                 title = title.trim ? title.trim() : title.replace(/^\s*/, "").replace(/\s*$/, "");
                 title = title.replace(/"/g, "quot;").replace(/\(/g, "&#40;").replace(/\)/g, "&#41;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
