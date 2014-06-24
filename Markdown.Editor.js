@@ -1079,7 +1079,9 @@
         var checkEscape = function (key) {
             var code = (key.charCode || key.keyCode);
             if (code === 27) {
+                if (key.stopPropagation) key.stopPropagation();
                 close(true);
+                return false;
             }
         };
 
@@ -1087,7 +1089,7 @@
         // isCancel is true if we don't care about the input text.
         // isCancel is false if we are going to keep the text.
         var close = function (isCancel) {
-            util.removeEvent(doc.body, "keydown", checkEscape);
+            util.removeEvent(doc.body, "keyup", checkEscape);
             var text = input.value;
 
             if (isCancel) {
@@ -1171,7 +1173,7 @@
             form.appendChild(okButton);
             form.appendChild(cancelButton);
 
-            util.addEvent(doc.body, "keydown", checkEscape);
+            util.addEvent(doc.body, "keyup", checkEscape);
             dialog.style.top = "50%";
             dialog.style.left = "50%";
             dialog.style.display = "block";
