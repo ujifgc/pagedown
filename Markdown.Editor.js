@@ -232,7 +232,7 @@
         var regexText;
         var replacementText;
 
-        // chrome bug ... documented at: http://meta.stackoverflow.com/questions/63307/blockquote-glitch-in-editor-in-chrome-6-and-7/65985#65985
+        // chrome bug ... documented at: http://meta.stackexchange.com/questions/63307/blockquote-glitch-in-editor-in-chrome-6-and-7/65985#65985
         if (navigator.userAgent.match(/Chrome/)) {
             "X".match(/()./);
         }
