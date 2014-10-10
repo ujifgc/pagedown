@@ -1691,11 +1691,15 @@
             
             var inQueryString = false;
 
-            // The last alternative, `[^\w\d-./]`, is just a shortcut that lets us skip
-            // the most common characters in URLs. Replacing it with `.` would not change
+            // Having `[^\w\d-./]` in there is just a shortcut that lets us skip
+            // the most common characters in URLs. Replacing that it with `.` would not change
             // the result, because encodeURI returns those characters unchanged, but it
-            // would mean lots of unnecessary replacement calls
-            link = link.replace(/%(?:[\da-fA-F]{2})|\?|\+|[^\w\d-./]/g, function (match) {
+            // would mean lots of unnecessary replacement calls. Having `[` and `]` in that
+            // section as well means we do *not* enocde square brackets. These characters are
+            // a strange beast in URLs, but if anything, this causes URLs to be more readable,
+            // and we leave it to the browser to make sure that these links are handled without
+            // problems.
+            link = link.replace(/%(?:[\da-fA-F]{2})|\?|\+|[^\w\d-./[\]]/g, function (match) {
                 // Valid percent encoding. Could just return it as is, but we follow RFC3986
                 // Section 2.1 which says "For consistency, URI producers and normalizers
                 // should use uppercase hexadecimal digits for all percent-encodings."

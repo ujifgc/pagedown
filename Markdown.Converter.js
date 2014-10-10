@@ -700,8 +700,8 @@ else
                     }
                 }
             }
-            url = encodeProblemUrlChars(url);
-            url = escapeCharacters(url, "*_");
+            url = attributeSafeUrl(url);
+
             var result = "<a href=\"" + url + "\"";
 
             if (title != "") {
@@ -777,7 +777,7 @@ else
         function attributeEncode(text) {
             // unconditionally replace angle brackets here -- what ends up in an attribute (e.g. alt or title)
             // never makes sense to have verbatim HTML in it (and the sanitizer would totally break it)
-            return text.replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+            return text.replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
         }
 
         function writeImageTag(wholeMatch, m1, m2, m3, m4, m5, m6, m7) {
@@ -1389,8 +1389,7 @@ else
             
 
             var replacer = function (wholematch, m1) {
-                var url = encodeProblemUrlChars(m1);
-                url = escapeCharacters(url, "*_");
+                var url = attributeSafeUrl(m1);
                 
                 return "<a href=\"" + url + "\">" + pluginHooks.plainLinkText(m1) + "</a>";
             };
@@ -1472,26 +1471,11 @@ else
         //  attacklab: Utility functions
         //
 
-        var _problemUrlChars = /(?:["'*()[\]:]|~D)/g;
-
-        // hex-encodes some unusual "problem" chars in URLs to avoid URL detection problems 
-        function encodeProblemUrlChars(url) {
-            if (!url)
-                return "";
-
-            var len = url.length;
-
-            return url.replace(_problemUrlChars, function (match, offset) {
-                if (match == "~D") // escape for dollar
-                    return "%24";
-                if (match == ":") {
-                    if (offset == len - 1 || /[0-9\/]/.test(url.charAt(offset + 1)))
-                        return ":"
-                }
-                return "%" + match.charCodeAt(0).toString(16);
-            });
+        function attributeSafeUrl(url) {
+            url = attributeEncode(url);
+            url = escapeCharacters(url, "*_:()[]")
+            return url;
         }
-
 
         function escapeCharacters(text, charsToEscape, afterBackslash) {
             // First we have to escape the escape characters so that
