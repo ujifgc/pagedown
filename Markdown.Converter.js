@@ -579,6 +579,10 @@ else
         }
 
         function _DoAnchors(text) {
+            
+            if (text.indexOf("[") === -1)
+                return text;
+            
             //
             // Turn Markdown link shortcuts into XHTML <a> tags.
             //
@@ -718,6 +722,10 @@ else
         }
 
         function _DoImages(text) {
+            
+            if (text.indexOf("![") === -1)
+                return text;
+            
             //
             // Turn Markdown image shortcuts into <img> tags.
             //
@@ -1180,6 +1188,9 @@ else
 
         function _DoItalicsAndBoldStrict(text) {
 
+            if (text.indexOf("*") === -1 && text.indexOf("_") === - 1)
+                return text;
+            
             text = asciify(text);
         
             // <strong> must go first:
@@ -1215,6 +1226,9 @@ else
         }
 
         function _DoItalicsAndBold_AllowIntrawordWithAsterisk(text) {
+            
+            if (text.indexOf("*") === -1 && text.indexOf("_") === - 1)
+                return text;
             
             text = asciify(text);
         
