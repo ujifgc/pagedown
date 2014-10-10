@@ -905,11 +905,13 @@ else
             /g
             */
             var whole_list = /^(([ ]{0,3}([*+-]|\d+[.])[ \t]+)[^\r]+?(~0|\n{2,}(?=\S)(?![ \t]*(?:[*+-]|\d+[.])[ \t]+)))/gm;
-
             if (g_list_level) {
                 text = text.replace(whole_list, function (wholeMatch, m1, m2) {
                     var list = m1;
                     var list_type = (m2.search(/[*+-]/g) > -1) ? "ul" : "ol";
+                    var first_number;
+                    if (list_type === "ol")
+                        first_number = parseInt(m2, 10)
 
                     var result = _ProcessListItems(list, list_type, isInsideParagraphlessListItem);
 
@@ -918,7 +920,10 @@ else
                     // HTML block parser. This is a hack to work around the terrible
                     // hack that is the HTML block parser.
                     result = result.replace(/\s+$/, "");
-                    result = "<" + list_type + ">" + result + "</" + list_type + ">\n";
+                    var opening = "<" + list_type;
+                    if (first_number && first_number !== 1)
+                        opening += " start=\"" + first_number + "\"";
+                    result = opening + ">" + result + "</" + list_type + ">\n";
                     return result;
                 });
             } else {
@@ -928,8 +933,17 @@ else
                     var list = m2;
 
                     var list_type = (m3.search(/[*+-]/g) > -1) ? "ul" : "ol";
+
+                    var first_number;
+                    if (list_type === "ol")
+                        first_number = parseInt(m3, 10)
+
                     var result = _ProcessListItems(list, list_type);
-                    result = runup + "<" + list_type + ">\n" + result + "</" + list_type + ">\n";
+                    var opening = "<" + list_type;
+                    if (first_number && first_number !== 1)
+                        opening += " start=\"" + first_number + "\"";
+
+                    result = runup + opening + ">\n" + result + "</" + list_type + ">\n";
                     return result;
                 });
             }
