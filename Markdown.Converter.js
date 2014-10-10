@@ -228,6 +228,8 @@ else
                 }                
             })();
         }
+        
+        var _DoItalicsAndBold = OPTIONS.asteriskIntraWordEmphasis ? _DoItalicsAndBold_AllowIntrawordWithAsterisk : _DoItalicsAndBoldStrict;
 
         this.makeHtml = function (text) {
 
@@ -1176,7 +1178,7 @@ else
             return text;
         }
 
-        function _DoItalicsAndBold(text) {
+        function _DoItalicsAndBoldStrict(text) {
 
             text = asciify(text);
         
@@ -1212,6 +1214,100 @@ else
             return deasciify(text);
         }
 
+        function _DoItalicsAndBold_AllowIntrawordWithAsterisk(text) {
+            
+            text = asciify(text);
+        
+            // <strong> must go first:
+            // (?=[^\r][*_]|[*_])               Optimization only, to find potentially relevant text portions faster. Minimally slower in Chrome, but much faster in IE.
+            // (                                Store in \1. This is the last character before the delimiter
+            //     ^                            Either we're at the start of the string (i.e. there is no last character)...
+            //     |                            ... or we allow one of the following:
+            //     (?=                          (lookahead; we're not capturing this, just listing legal possibilities)
+            //         \W__                     If the delimiter is __, then this last character must be non-word non-underscore (extra-word emphasis only)
+            //         |
+            //         (?!\*)[\W_]\*\*          If the delimiter is **, then this last character can be non-word non-asterisk (extra-word emphasis)...
+            //         |
+            //         \w\*\*\w                 ...or it can be word/underscore, but only if the first bolded character is such a character as well (intra-word emphasis)
+            //     )
+            //     [^\r]                        actually capture the character (can't use `.` since it could be \n)
+            // )
+            // (\*\*|__)                        Store in \2: the actual delimiter
+            // (?!\2)                           not followed by the delimiter again (at most one more asterisk/underscore is allowed)
+            // (?=\S)                           the first bolded character can't be a space
+            // (                                Store in \3: the bolded string
+            //                                  
+            //     (?:|                         Look at all bolded characters except for the last one. Either that's empty, meaning only a single character was bolded...
+            //       [^\r]*?                    ... otherwise take arbitrary characters, minimally matching; that's all bolded characters except for the last *two*
+            //       (?!\2)                       the last two characters cannot be the delimiter itself (because that would mean four underscores/asterisks in a row)
+            //       [^\r]                        capture the next-to-last bolded character
+            //     )
+            //     (?=                          lookahead at the very last bolded char and what comes after
+            //         \S_                      for underscore-bolding, it can be any non-space
+            //         |
+            //         \w                       for asterisk-bolding (otherwise the previous alternative would've matched, since \w implies \S), either the last char is word/underscore...
+            //         |
+            //         \S\*\*(?:[\W_]|$)        ... or it's any other non-space, but in that case the character *after* the delimiter may not be a word character
+            //     )
+            //     .                            actually capture the last character (can use `.` this time because the lookahead ensures \S in all cases)
+            // )
+            // (?=                              lookahead; list the legal possibilities for the closing delimiter and its following character
+            //     __(?:\W|$)                   for underscore-bolding, the following character (if any) must be non-word non-underscore
+            //     |
+            //     \*\*(?:[^*]|$)               for asterisk-bolding, any non-asterisk is allowed (note we already ensured above that it's not a word character if the last bolded character wasn't one)
+            // )
+            // \2                               actually capture the closing delimiter (and make sure that it matches the opening one)
+          
+            text = text.replace(/(?=[^\r][*_]|[*_])(^|(?=\W__|(?!\*)[\W_]\*\*|\w\*\*\w)[^\r])(\*\*|__)(?!\2)(?=\S)((?:|[^\r]*?(?!\2)[^\r])(?=\S_|\w|\S\*\*(?:[\W_]|$)).)(?=__(?:\W|$)|\*\*(?:[^*]|$))\2/g,
+            "$1<strong>$3</strong>");
+
+            // now <em>:
+            // (?=[^\r][*_]|[*_])               Optimization, see above.
+            // (                                Store in \1. This is the last character before the delimiter
+            //     ^                            Either we're at the start of the string (i.e. there is no last character)...
+            //     |                            ... or we allow one of the following:
+            //     (?=                          (lookahead; we're not capturing this, just listing legal possibilities)
+            //         \W_                      If the delimiter is _, then this last character must be non-word non-underscore (extra-word emphasis only)
+            //         |
+            //         (?!\*)                   otherwise, we list two possiblities for * as the delimiter; in either case, the last characters cannot be an asterisk itself
+            //         (?:
+            //             [\W_]\*              this last character can be non-word (extra-word emphasis)...
+            //             |
+            //             \D\*(?=\w)\D         ...or it can be word (otherwise the first alternative would've matched), but only if
+            //                                      a) the first italicized character is such a character as well (intra-word emphasis), and
+            //                                      b) neither character on either side of the asterisk is a digit            
+            //         )
+            //     )
+            //     [^\r]                        actually capture the character (can't use `.` since it could be \n)
+            // )
+            // (\*|_)                           Store in \2: the actual delimiter
+            // (?!\2\2\2)                       not followed by more than two more instances of the delimiter
+            // (?=\S)                           the first italicized character can't be a space
+            // (                                Store in \3: the italicized string
+            //     (?:(?!\2)[^\r])*?            arbitrary characters except for the delimiter itself, minimally matching
+            //     (?=                          lookahead at the very last italicized char and what comes after
+            //         [^\s_]_                  for underscore-italicizing, it can be any non-space non-underscore
+            //         |
+            //         (?=\w)\D\*\D             for asterisk-italicizing, either the last char is word/underscore *and* neither character on either side of the asterisk is a digit...
+            //         |
+            //         [^\s*]\*(?:[\W_]|$)      ... or that last char is any other non-space non-asterisk, but then the character after the delimiter (if any) must be non-word
+            //     )
+            //     .                            actually capture the last character (can use `.` this time because the lookahead ensures \S in all cases)
+            // )
+            // (?=                              lookahead; list the legal possibilities for the closing delimiter and its following character
+            //     _(?:\W|$)                    for underscore-italicizing, the following character (if any) must be non-word non-underscore
+            //     |
+            //     \*(?:[^*]|$)                 for asterisk-italicizing, any non-asterisk is allowed; all other restrictions have already been ensured in the previous lookahead
+            // )
+            // \2                               actually capture the closing delimiter (and make sure that it matches the opening one)
+
+            text = text.replace(/(?=[^\r][*_]|[*_])(^|(?=\W_|(?!\*)(?:[\W_]\*|\D\*(?=\w)\D))[^\r])(\*|_)(?!\2\2\2)(?=\S)((?:(?!\2)[^\r])*?(?=[^\s_]_|(?=\w)\D\*\D|[^\s*]\*(?:[\W_]|$)).)(?=_(?:\W|$)|\*(?:[^*]|$))\2/g,
+            "$1<em>$3</em>");
+            
+            return deasciify(text);
+        }        
+
+        
         function _DoBlockQuotes(text) {
 
             /*
