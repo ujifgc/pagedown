@@ -122,7 +122,7 @@
                 return; // already initialized
 
             panels = new PanelCollection(idPostfix);
-            var commandManager = new CommandManager(hooks, getString);
+            var commandManager = new CommandManager(hooks, getString, markdownConverter);
             var previewManager = new PreviewManager(markdownConverter, panels, function () { hooks.onPreviewRefresh(); });
             var undoManager, uiManager;
 
@@ -1526,9 +1526,10 @@
 
     }
 
-    function CommandManager(pluginHooks, getString) {
+    function CommandManager(pluginHooks, getString, converter) {
         this.hooks = pluginHooks;
         this.getString = getString;
+        this.converter = converter;
     }
 
     var commandProto = CommandManager.prototype;
@@ -1638,7 +1639,56 @@
 
         var defs = "";
         var regex = /(\[)((?:\[[^\]]*\]|[^\[\]])*)(\][ ]?(?:\n[ ]*)?\[)(\d+)(\])/g;
+        
+        // The above regex, used to update [foo][13] references after renumbering,
+        // is much too liberal; it can catch things that are not actually parsed
+        // as references (notably: code). It's impossible to know which matches are
+        // real references without performing a markdown conversion, so that's what
+        // we do. All matches are replaced with a unique reference number, which is
+        // given a unique link. The uniquifier in both cases is the character offset
+        // of the match inside the source string. The modified version is then sent
+        // through the Markdown renderer. Because link reference are stripped during
+        // rendering, the unique link is present in the rendered version if and only
+        // if the match at its offset was in fact rendered as a link or image.
+        var complete = chunk.before + chunk.selection + chunk.after;
+        var rendered = this.converter.makeHtml(complete);
+        var testlink = "http://this-is-a-real-link.biz/";
+        
+        // If our fake link appears in the rendered version *before* we have added it,
+        // this probably means you're a Meta Stack Exchange user who is deliberately
+        // trying to break this feature. You can still break this workaround if you
+        // attach a plugin to the converter that sometimes (!) inserts this link. In
+        // that case, consider yourself unsupported.
+        while (rendered.indexOf(testlink) != -1)
+            testlink += "nicetry/";
+        
+        var fakedefs = "\n\n";
 
+        // the regex is tested on the (up to) three chunks separately, and on substrings,
+        // so in order to have the correct offsets to check against okayToModify(), we
+        // have to keep track of how many characters are in the original source before
+        // the substring that we're looking at. Note that doLinkOrImage aligns the selection
+        // on potential brackets, so there should be no major breakage from the chunk
+        // separation.
+        var skippedChars = 0;
+
+        var uniquified = complete.replace(regex, function uniquify(wholeMatch, before, inner, afterInner, id, end, offset) {
+            skippedChars += offset;
+            fakedefs += " [" + skippedChars + "]: " + testlink + skippedChars + "/unicorn\n";
+            skippedChars += before.length;
+            inner = inner.replace(regex, uniquify);
+            skippedChars -= before.length;
+            var result = before + inner + afterInner + skippedChars + end;
+            skippedChars -= offset;
+            return result;
+        });
+        
+        rendered = this.converter.makeHtml(uniquified + fakedefs);
+        
+        var okayToModify = function(offset) {
+            return rendered.indexOf(testlink + offset + "/unicorn") !== -1;
+        }
+        
         var addDefNumber = function (def) {
             refNumber++;
             def = def.replace(/^[ ]{0,3}\[(\d+)\]:/, "  [" + refNumber + "]:");
@@ -1650,8 +1700,12 @@
         //    of regex, inner is always a proper substring of wholeMatch, and
         // b) more than one level of nesting is neither supported by the regex
         //    nor making a lot of sense (the only use case for nesting is a linked image)
-        var getLink = function (wholeMatch, before, inner, afterInner, id, end) {
+        var getLink = function (wholeMatch, before, inner, afterInner, id, end, offset) {
+            if (!okayToModify(skippedChars + offset))
+                return wholeMatch;
+            skippedChars += offset + before.length;
             inner = inner.replace(regex, getLink);
+            skippedChars -= offset + before.length;
             if (defsToAdd[id]) {
                 addDefNumber(defsToAdd[id]);
                 return before + inner + afterInner + refNumber + end;
@@ -1659,14 +1713,18 @@
             return wholeMatch;
         };
 
+        var len = chunk.before.length;
         chunk.before = chunk.before.replace(regex, getLink);
-
+        skippedChars += len;
+        
+        len = chunk.selection.length;
         if (linkDef) {
             addDefNumber(linkDef);
         }
         else {
             chunk.selection = chunk.selection.replace(regex, getLink);
         }
+        skippedChars += len;        
 
         var refOut = refNumber;
 
