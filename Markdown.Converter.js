@@ -332,18 +332,18 @@ else
                     [")]
                     [ \t]*
                 )?                  // title is optional
-                (?:\n+|$)
+                (\n+)             // subsequent newlines = $6, capturing because they must be put back if the potential title isn't an actual title
             /gm, function(){...});
             */
 
-            text = text.replace(/^[ ]{0,3}\[([^\[\]]+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?(?=\s|$)[ \t]*\n?[ \t]*((\n*)["(](.+?)[")][ \t]*)?(?:\n+)/gm,
-                function (wholeMatch, m1, m2, m3, m4, m5) {
+            text = text.replace(/^[ ]{0,3}\[([^\[\]]+)\]:[ \t]*\n?[ \t]*<?(\S+?)>?(?=\s|$)[ \t]*\n?[ \t]*((\n*)["(](.+?)[")][ \t]*)?(\n+)/gm,
+                function (wholeMatch, m1, m2, m3, m4, m5, m6) {
                     m1 = m1.toLowerCase();
                     g_urls.set(m1, _EncodeAmpsAndAngles(m2));  // Link IDs are case-insensitive
                     if (m4) {
                         // Oops, found blank lines, so it's not a title.
                         // Put back the parenthetical statement we stole.
-                        return m3;
+                        return m3 + m6;
                     } else if (m5) {
                         g_titles.set(m1, m5.replace(/"/g, "&quot;"));
                     }
