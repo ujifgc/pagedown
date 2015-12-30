@@ -11,6 +11,7 @@ Original Showdown code copyright (c) 2007 John Fraser
 
 Modifications and bugfixes (c) 2009 Dana Robinson
 Modifications and bugfixes (c) 2009-2014 Stack Exchange Inc.
+Modifications and bugfixes (c) 2015 Google, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
