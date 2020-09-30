@@ -35,8 +35,8 @@
         hr: "Linea orizzontale <hr> Ctrl+R",
 
         undo: "Annulla - Ctrl+Z",
-        redo: "Cancella - Ctrl+Y",
-        redomac: "Cancella - Ctrl+Shift+Z",
+        redo: "Ripristina - Ctrl+Y",
+        redomac: "Ripristina - Ctrl+Shift+Z",
 
         help: "Aiuto sul Markdown"
     };
